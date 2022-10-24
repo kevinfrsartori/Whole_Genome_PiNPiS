@@ -7,4 +7,4 @@
 -for the variants: a VCF file ".vcf".
 
 ## Procedure:
-follow the 0-Steps_PiNpiS text file
+Follow the 0-Steps_PiNPiS text file
