@@ -7,4 +7,7 @@
 -for the variants: a VCF file ".vcf".
 
 ## Procedure:
-Follow the 0-Steps_PiNPiS text file
+Follow the 0-Steps_PiNPiS text file.  
+  
+Given with no garanties,  
+Analysis not published yet.
