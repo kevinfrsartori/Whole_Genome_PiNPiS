@@ -1,0 +1,77 @@
+###################
+# This script gather the step required to compute whole genome PiN/PiS
+# The pipeline was designed for submitting steps on batch mode on a remote cluster
+# Do not run this script at once
+# It is important to run it step by step and to check in between that everything goes well
+# The pipeline works for standard data that one can find online (e.g. phytozome)
+# One needs the ".cds.fa", ".gene.gff3", "protein.fa" as a reference genomics file + a ".vcf" file that contains the variants.
+# it is mandatory that the .vcf file was obtain by mapping sequencing reads on the exact same reference genomics files.
+# Directory are not relative in the different scripts. They must be changed everywhere...
+# Kevin Sartori 2022-09
+################### 
+
+
+# 1 - Prepare dataset: filter out indels and non variable sites
+
+sbatch 1-Make_filter_vcf.sh
+
+# 2 - Make one vcf per chromosome.
+# This help shortening the computation time by running simultaneously the chromosomes
+for i in 1 2 3 4 5 6 7 8
+do
+sbatch Split_chrm.sh $i
+done
+
+# 3 - make gene list
+# The step takes time (hours probably) but is important to optimise computation time
+# one list per chromosome, chromosomes will be treated in parallel
+
+# 3.1
+#echo "make list of genes available in gff file"
+#grep -E '>Carub' /crex/proj/snic2020-16-182/C_rubella/REF/Crubella_183_v1.0.cds.fa | sed -r 's/^.{1}//' > gff.gene.list.txt
+#echo "done"
+
+# 3.2
+#echo "make list of genes + infos"
+#touch chrom.txt
+#touch gene.txt
+#touch start.txt
+#touch end.txt
+#touch strand.txt
+#while read carub pacid poly loc id ann
+#do
+#grep $carub /crex/proj/snic2020-16-182/C_rubella/REF/Crubella_183_v1.0.gene.gff3 | cut -f1 | head -1 >> chrom.txt
+#grep $carub /crex/proj/snic2020-16-182/C_rubella/REF/Crubella_183_v1.0.gene.gff3 | cut -f7 | head -1 >> strand.txt
+#grep $carub /crex/proj/snic2020-16-182/C_rubella/REF/Crubella_183_v1.0.gene.gff3 > $carub.gff3
+#cut -f4 -d$'\t' $carub.gff3 > $carub.bornes.txt
+#cut -f5 -d$'\t' $carub.gff3 >> $carub.bornes.txt
+#sort -n $carub.bornes.txt | head -1 >> start.txt
+#sort -n $carub.bornes.txt | tail -1 >> end.txt
+#echo $carub >> gene.txt
+#rm Carub*
+#done < gff.gene.list.txt
+#paste chrom.txt gene.txt start.txt end.txt strand.txt | column -s $'\t' -t > gene.list.txt
+#rm start* end* chrom* strand* gene.txt
+
+#3.3
+echo "split list per chromosome"
+for i in 1 2 3 4 5 6 7 8
+do
+grep -w 'scaffold_'$i gene.list.txt > scaffold_$i.gene.list.txt
+mkdir temp_$i
+touch result_scaffold_$i.txt
+echo "Gene_ID Nb_sites Nb_s_sites Nb_ns_sites Pis Pin PinPis" > result_scaffold_$i.txt
+echo $i
+done
+
+
+# 4 - Compute gene stats
+# for one gene at a time, make fasta and vcf files
+# then compute stats with R
+for i in 1 2 3 4 5 6 7 8
+do
+cd temp_$i/
+sbatch ../3-Make_gene_files_compute_stats.sh $i
+cd ..
+done
+
